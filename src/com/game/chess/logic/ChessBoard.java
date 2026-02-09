@@ -64,6 +64,136 @@ public class ChessBoard {
         }
         return true; // King not found, was captured
     }
+    
+    /**
+     * Check if the king of the given color is currently under attack (in check).
+     */
+    public boolean isInCheck(ChessColor kingColor) {
+        // Find the king's position
+        int kingRow = -1, kingCol = -1;
+        for (int row = 0; row < SIZE; row++) {
+            for (int col = 0; col < SIZE; col++) {
+                ChessPiece piece = board[row][col];
+                if (piece != null && piece.getType() == ChessPieceType.KING && piece.getColor() == kingColor) {
+                    kingRow = row;
+                    kingCol = col;
+                    break;
+                }
+            }
+            if (kingRow != -1) break;
+        }
+        
+        if (kingRow == -1) {
+            // King not found (shouldn't happen in normal game)
+            return false;
+        }
+        
+        // Check if any opponent piece can attack the king's position
+        ChessColor opponentColor = kingColor.opposite();
+        for (int row = 0; row < SIZE; row++) {
+            for (int col = 0; col < SIZE; col++) {
+                ChessPiece piece = board[row][col];
+                if (piece != null && piece.getColor() == opponentColor) {
+                    ChessMove attackMove = new ChessMove(row, col, kingRow, kingCol);
+                    // Check if this piece can legally move to the king's position
+                    // We use a simplified check that doesn't verify if the move leaves the attacker's king in check
+                    if (isLegalMoveIgnoringCheck(attackMove, opponentColor)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if the given color is in checkmate (in check with no legal moves).
+     */
+    public boolean isCheckmate(ChessColor color) {
+        if (!isInCheck(color)) {
+            return false; // Not in check, so can't be checkmate
+        }
+        return !hasAnyLegalMove(color);
+    }
+    
+    /**
+     * Check if the given color is in stalemate (not in check but no legal moves).
+     */
+    public boolean isStalemate(ChessColor color) {
+        if (isInCheck(color)) {
+            return false; // In check, so can't be stalemate
+        }
+        return !hasAnyLegalMove(color);
+    }
+    
+    /**
+     * Check if the given color has any legal move available.
+     */
+    public boolean hasAnyLegalMove(ChessColor color) {
+        for (int fromRow = 0; fromRow < SIZE; fromRow++) {
+            for (int fromCol = 0; fromCol < SIZE; fromCol++) {
+                ChessPiece piece = board[fromRow][fromCol];
+                if (piece == null || piece.getColor() != color) {
+                    continue;
+                }
+                
+                for (int toRow = 0; toRow < SIZE; toRow++) {
+                    for (int toCol = 0; toCol < SIZE; toCol++) {
+                        ChessMove move = new ChessMove(fromRow, fromCol, toRow, toCol);
+                        if (isLegalMove(move, color)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Check if a move is legal according to piece movement rules only,
+     * without checking if it leaves the player's own king in check.
+     * Used internally for check detection.
+     */
+    private boolean isLegalMoveIgnoringCheck(ChessMove move, ChessColor player) {
+        int fromRow = move.getFromRow();
+        int fromCol = move.getFromCol();
+        int toRow = move.getToRow();
+        int toCol = move.getToCol();
+
+        if (!isInsideBoard(fromRow, fromCol) || !isInsideBoard(toRow, toCol)) {
+            return false;
+        }
+
+        ChessPiece piece = board[fromRow][fromCol];
+        if (piece == null || piece.getColor() != player) {
+            return false;
+        }
+
+        ChessPiece target = board[toRow][toCol];
+        if (target != null && target.getColor() == player) {
+            return false;
+        }
+
+        // dispatch to piece-specific rules
+        switch (piece.getType()) {
+            case PAWN:
+                return isLegalPawnMove(fromRow, fromCol, toRow, toCol, piece.getColor(), target);
+            case KNIGHT:
+                return isLegalKnightMove(fromRow, fromCol, toRow, toCol);
+            case BISHOP:
+                return isLegalBishopMove(fromRow, fromCol, toRow, toCol);
+            case ROOK:
+                return isLegalRookMove(fromRow, fromCol, toRow, toCol);
+            case QUEEN:
+                return isLegalQueenMove(fromRow, fromCol, toRow, toCol);
+            case KING:
+                return isLegalKingMove(fromRow, fromCol, toRow, toCol);
+            default:
+                return false;
+        }
+    }
 
     public boolean isInsideBoard(int row, int col) {
         return row >= 0 && row < SIZE && col >= 0 && col < SIZE;
@@ -90,23 +220,48 @@ public class ChessBoard {
             return false;
         }
 
-        // dispatch to piece-specific rules
+        // Check piece-specific movement rules first
+        boolean validMove = false;
         switch (piece.getType()) {
             case PAWN:
-                return isLegalPawnMove(fromRow, fromCol, toRow, toCol, piece.getColor(), target);
+                validMove = isLegalPawnMove(fromRow, fromCol, toRow, toCol, piece.getColor(), target);
+                break;
             case KNIGHT:
-                return isLegalKnightMove(fromRow, fromCol, toRow, toCol);
+                validMove = isLegalKnightMove(fromRow, fromCol, toRow, toCol);
+                break;
             case BISHOP:
-                return isLegalBishopMove(fromRow, fromCol, toRow, toCol);
+                validMove = isLegalBishopMove(fromRow, fromCol, toRow, toCol);
+                break;
             case ROOK:
-                return isLegalRookMove(fromRow, fromCol, toRow, toCol);
+                validMove = isLegalRookMove(fromRow, fromCol, toRow, toCol);
+                break;
             case QUEEN:
-                return isLegalQueenMove(fromRow, fromCol, toRow, toCol);
+                validMove = isLegalQueenMove(fromRow, fromCol, toRow, toCol);
+                break;
             case KING:
-                return isLegalKingMove(fromRow, fromCol, toRow, toCol);
+                validMove = isLegalKingMove(fromRow, fromCol, toRow, toCol);
+                break;
             default:
                 return false;
         }
+        
+        if (!validMove) {
+            return false;
+        }
+        
+        // Critical: Check if this move would leave our king in check
+        // This is a fundamental rule of chess - you cannot make a move that puts/leaves your king in check
+        ChessPiece capturedPiece = board[toRow][toCol];
+        board[fromRow][fromCol] = null;
+        board[toRow][toCol] = piece;
+        
+        boolean leavesKingInCheck = isInCheck(player);
+        
+        // Undo the move
+        board[fromRow][fromCol] = piece;
+        board[toRow][toCol] = capturedPiece;
+        
+        return !leavesKingInCheck;
     }
     
     private boolean isPathClear(int fromRow, int fromCol, int toRow, int toCol) {

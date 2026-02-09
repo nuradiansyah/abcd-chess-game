@@ -9,6 +9,17 @@ public class ChessAI {
 	private final Random random = new Random();
 
     public ChessMove chooseMove(ChessBoard board, ChessColor color) {
+    	// Check for checkmate or stalemate first
+    	if (board.isCheckmate(color)) {
+    		System.out.println(color + " is in checkmate!");
+    		return null; // Game over - checkmate
+    	}
+    	
+    	if (board.isStalemate(color)) {
+    		System.out.println(color + " is in stalemate (draw)!");
+    		return null; // Game over - stalemate (draw)
+    	}
+    	
     	List<ChessMove> allMoves = new ArrayList<>();
 	 	List<ChessMove> captureMoves = new ArrayList<>();
          
@@ -37,7 +48,8 @@ public class ChessAI {
         }
     	
     	if (allMoves.isEmpty()) {
-            return null; // no legal move
+            // This shouldn't happen as we checked above, but safety check
+            return null;
         }
     	// Prefer captures if available, otherwise any legal move
         List<ChessMove> pool = captureMoves.isEmpty() ? allMoves : captureMoves;

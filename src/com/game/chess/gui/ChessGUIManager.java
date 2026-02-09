@@ -34,6 +34,7 @@ public class ChessGUIManager extends JFrame {
     private LeaderboardManager leaderboardManager;
     private String playerName;
     private ChessGameEngine.AILevel selectedAILevel;
+    private ChessColor playerColor; // Track which color the player chose
 
     public ChessGUIManager() {
         setTitle("Chess Game");
@@ -58,26 +59,30 @@ public class ChessGUIManager extends JFrame {
         title.setHorizontalAlignment(SwingConstants.CENTER);
         panel.add(title, BorderLayout.NORTH);
 
-        JPanel buttons = new JPanel(new GridLayout(3, 1, 10, 10));
+        JPanel buttons = new JPanel(new GridLayout(4, 1, 10, 10));
         buttons.setBorder(BorderFactory.createEmptyBorder(20, 50, 20, 50));
         
         JButton twoPlayersBtn = new JButton("Two Players");
         JButton vsComputerBeginnerBtn = new JButton("Player vs Computer (Beginner)");
         JButton vsComputerIntermediateBtn = new JButton("Player vs Computer (Intermediate)");
+        JButton vsComputerAdvancedBtn = new JButton("Player vs Computer (Advanced)");
         
         // Set font for better visibility
         Font buttonFont = new Font("Arial", Font.BOLD, 16);
         twoPlayersBtn.setFont(buttonFont);
         vsComputerBeginnerBtn.setFont(buttonFont);
         vsComputerIntermediateBtn.setFont(buttonFont);
+        vsComputerAdvancedBtn.setFont(buttonFont);
 
         twoPlayersBtn.addActionListener((ActionEvent e) -> showPlayerNameInput(ChessGameEngine.AILevel.NONE));
         vsComputerBeginnerBtn.addActionListener((ActionEvent e) -> showPlayerNameInput(ChessGameEngine.AILevel.BEGINNER));
         vsComputerIntermediateBtn.addActionListener((ActionEvent e) -> showPlayerNameInput(ChessGameEngine.AILevel.INTERMEDIATE));
+        vsComputerAdvancedBtn.addActionListener((ActionEvent e) -> showPlayerNameInput(ChessGameEngine.AILevel.ADVANCED));
 
         buttons.add(twoPlayersBtn);
         buttons.add(vsComputerBeginnerBtn);
         buttons.add(vsComputerIntermediateBtn);
+        buttons.add(vsComputerAdvancedBtn);
         panel.add(buttons, BorderLayout.CENTER);
         
         // Bottom panel with leaderboard and scoring info buttons
@@ -149,6 +154,7 @@ public class ChessGUIManager extends JFrame {
                     blackName = "Black Player";
                 }
                 playerName = whiteName + " vs " + blackName;
+                playerColor = ChessColor.WHITE; // Default for two-player mode
                 startGame(selectedAILevel);
             });
 
@@ -160,7 +166,7 @@ public class ChessGUIManager extends JFrame {
 
             namePanel.add(inputPanel, BorderLayout.CENTER);
         } else {
-            setSize(450, 250); // Compact size for single name input
+            setSize(450, 350); // Larger size for name input + color selection
             setLocationRelativeTo(null);
             
             JLabel titleLabel = new JLabel("Enter Your Name");
@@ -168,7 +174,7 @@ public class ChessGUIManager extends JFrame {
             titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
             namePanel.add(titleLabel, BorderLayout.NORTH);
 
-            JPanel inputPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+            JPanel inputPanel = new JPanel(new GridLayout(5, 2, 10, 10));
 
             JLabel nameLabel = new JLabel("Player Name:");
             nameLabel.setFont(new Font("Arial", Font.PLAIN, 16));
@@ -177,6 +183,64 @@ public class ChessGUIManager extends JFrame {
 
             inputPanel.add(nameLabel);
             inputPanel.add(nameField);
+
+            // Add color selection - using separate rows for better visibility
+            JLabel colorLabel = new JLabel("Play as:");
+            colorLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+            
+            JButton whiteBtn = new JButton("⬜ White (goes first)");
+            JButton blackBtn = new JButton("⬛ Black (goes second)");
+            whiteBtn.setFont(new Font("Arial", Font.BOLD, 14));
+            blackBtn.setFont(new Font("Arial", Font.BOLD, 14));
+            
+            // Track selected color (default to White)
+            final ChessColor[] selectedColor = {ChessColor.WHITE};
+            
+            // Set initial colors - selected is green, unselected is light gray
+            whiteBtn.setBackground(new Color(100, 200, 100)); // Bright green for selected
+            whiteBtn.setForeground(Color.BLACK); // Black text for readability
+            blackBtn.setBackground(new Color(220, 220, 220)); // Light gray for unselected
+            blackBtn.setForeground(Color.BLACK); // Black text
+            
+            // Critical settings for macOS/cross-platform color rendering
+            whiteBtn.setOpaque(true);
+            blackBtn.setOpaque(true);
+            whiteBtn.setContentAreaFilled(true);
+            blackBtn.setContentAreaFilled(true);
+            whiteBtn.setBorderPainted(true);
+            blackBtn.setBorderPainted(true);
+            
+            whiteBtn.addActionListener(e -> {
+                selectedColor[0] = ChessColor.WHITE;
+                // Selected: bright green background with black text
+                whiteBtn.setBackground(new Color(100, 200, 100));
+                whiteBtn.setForeground(Color.BLACK);
+                // Unselected: light gray background with black text
+                blackBtn.setBackground(new Color(220, 220, 220));
+                blackBtn.setForeground(Color.BLACK);
+                // Force UI refresh
+                whiteBtn.repaint();
+                blackBtn.repaint();
+            });
+            
+            blackBtn.addActionListener(e -> {
+                selectedColor[0] = ChessColor.BLACK;
+                // Selected: bright green background with black text
+                blackBtn.setBackground(new Color(100, 200, 100));
+                blackBtn.setForeground(Color.BLACK);
+                // Unselected: light gray background with black text
+                whiteBtn.setBackground(new Color(220, 220, 220));
+                whiteBtn.setForeground(Color.BLACK);
+                // Force UI refresh
+                blackBtn.repaint();
+                whiteBtn.repaint();
+            });
+            
+            inputPanel.add(colorLabel);
+            inputPanel.add(whiteBtn);
+            
+            inputPanel.add(new JLabel()); // Empty label for alignment
+            inputPanel.add(blackBtn);
 
             JButton startButton = new JButton("Start Game");
             startButton.setFont(new Font("Arial", Font.BOLD, 18));
@@ -187,6 +251,7 @@ public class ChessGUIManager extends JFrame {
                     name = "Player";
                 }
                 playerName = name;
+                playerColor = selectedColor[0];
                 startGame(selectedAILevel);
             });
 
@@ -213,6 +278,12 @@ public class ChessGUIManager extends JFrame {
     private void startGame(ChessGameEngine.AILevel aiLevel) {
         // Create engine first
         engine = new ChessGameEngine(aiLevel);
+        
+        // If playing against computer, set AI color to opposite of player's choice
+        if (aiLevel != ChessGameEngine.AILevel.NONE && playerColor != null) {
+            ChessColor aiColor = playerColor.opposite();
+            engine.setAIColor(aiColor);
+        }
         
         // Create all components before modifying the window
         ChessBoardPanel newBoardPanel = new ChessBoardPanel(engine, this);
@@ -249,19 +320,59 @@ public class ChessGUIManager extends JFrame {
         setSize(800, 800);
         setLocationRelativeTo(null); // Re-center after resize
         
-        updateStatusLabel(); // set initial "White to move"
+        updateStatusLabel(); // set initial status
 
         revalidate();
         repaint();
+        
+        // If player chose Black, let AI make the first move as White
+        // Use invokeLater to ensure UI is fully rendered first
+        if (aiLevel != ChessGameEngine.AILevel.NONE && playerColor == ChessColor.BLACK) {
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                engine.makeComputerMoveIfNeeded();
+                boardPanel.refreshBoard();
+                updateStatusLabel();
+            });
+        }
     }
 
     public void updateStatusLabel() {
     	 if (engine == null || statusLabel == null) {
              return;
          }
+         
          ChessColor current = engine.getCurrentPlayer();
-         String text = (current == ChessColor.WHITE) ? "White to move" : "Black to move";
-         statusLabel.setText(text);
+         String playerName = (current == ChessColor.WHITE) ? "White" : "Black";
+         
+         // Check game state and display appropriate warning
+         if (engine.getBoard().isCheckmate(current)) {
+             statusLabel.setText("⚠️ CHECKMATE! " + playerName + " has been checkmated!");
+             statusLabel.setForeground(Color.RED);
+             JOptionPane.showMessageDialog(this, 
+                 playerName + " is in CHECKMATE!\nGame Over!", 
+                 "Checkmate!", 
+                 JOptionPane.WARNING_MESSAGE);
+             return;
+         }
+         
+         if (engine.getBoard().isStalemate(current)) {
+             statusLabel.setText("⚠️ STALEMATE! " + playerName + " has no legal moves - Game is a draw!");
+             statusLabel.setForeground(Color.ORANGE);
+             JOptionPane.showMessageDialog(this, 
+                 playerName + " is in STALEMATE!\nNo legal moves available. Game is a draw!", 
+                 "Stalemate - Draw", 
+                 JOptionPane.INFORMATION_MESSAGE);
+             return;
+         }
+         
+         if (engine.getBoard().isInCheck(current)) {
+             statusLabel.setText("⚠️ CHECK! " + playerName + " is in check - must escape!");
+             statusLabel.setForeground(Color.RED);
+         } else {
+             String text = playerName + " to move";
+             statusLabel.setText(text);
+             statusLabel.setForeground(Color.BLACK);
+         }
 	}
 	
 	private void handleResign() {
@@ -316,8 +427,10 @@ public class ChessGUIManager extends JFrame {
 	        opponentType = "Human";
 	    } else if (engine.getAILevel() == ChessGameEngine.AILevel.BEGINNER) {
 	        opponentType = "Beginner AI";
-	    } else {
+	    } else if (engine.getAILevel() == ChessGameEngine.AILevel.INTERMEDIATE) {
 	        opponentType = "Intermediate AI";
+	    } else {
+	        opponentType = "Advanced AI";
 	    }
 	    
 	    String message = playerWon ? 
@@ -366,6 +479,8 @@ public class ChessGUIManager extends JFrame {
 	        difficultyMultiplier = 1.5;
 	    } else if (engine.getAILevel() == ChessGameEngine.AILevel.INTERMEDIATE) {
 	        difficultyMultiplier = 2.5;
+	    } else if (engine.getAILevel() == ChessGameEngine.AILevel.ADVANCED) {
+	        difficultyMultiplier = 4.0; // Highest reward for beating advanced AI
 	    }
 	    
 	    // Efficiency bonus (fewer moves = better)

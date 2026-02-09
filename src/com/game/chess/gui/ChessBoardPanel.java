@@ -75,8 +75,8 @@ public class ChessBoardPanel extends JPanel implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
     	
-    	// 1\) If vs computer and it is computer's turn (black), ignore all clicks
-        if (engine.isVsComputer() && engine.getCurrentPlayer() == ChessColor.BLACK) {
+    	// If vs computer and it's the AI's turn, ignore all clicks
+        if (engine.isVsComputer() && engine.getCurrentPlayer() == engine.getAIColor()) {
             return;
         }
         
@@ -102,8 +102,9 @@ public class ChessBoardPanel extends JPanel implements ActionListener {
                 refreshBoard();
                 guiManager.updateStatusLabel(); // after player move
                 
-                // Check if black king was captured (player won)
-                if (engine.getBoard().isKingCaptured(ChessColor.BLACK)) {
+                // Check if opponent's king was captured (player won)
+                ChessColor opponentColor = engine.getAIColor() != null ? engine.getAIColor() : engine.getCurrentPlayer();
+                if (engine.getBoard().isKingCaptured(opponentColor)) {
                     guiManager.handleGameEnd(true);
                     return;
                 }
@@ -112,8 +113,9 @@ public class ChessBoardPanel extends JPanel implements ActionListener {
                 refreshBoard();
                 guiManager.updateStatusLabel(); // after computer move, if any
                 
-                // Check if white king was captured (player lost)
-                if (engine.getBoard().isKingCaptured(ChessColor.WHITE)) {
+                // Check if player's king was captured (player lost)
+                ChessColor playerColor = engine.getAIColor() != null ? engine.getAIColor().opposite() : engine.getCurrentPlayer().opposite();
+                if (engine.getBoard().isKingCaptured(playerColor)) {
                     guiManager.handleGameEnd(false);
                     return;
                 }

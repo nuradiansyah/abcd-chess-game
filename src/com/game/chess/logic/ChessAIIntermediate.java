@@ -26,10 +26,21 @@ public class ChessAIIntermediate {
 	 * Choose the best move for the AI based on position evaluation.
 	 */
 	public ChessMove chooseMove(ChessBoard board, ChessColor color) {
-		List<ChessMove> allMoves = new ArrayList<>();
-		List<ChessMove> captureMoves = new ArrayList<>();
+		// Check for checkmate or stalemate first
+		if (board.isCheckmate(color)) {
+			System.out.println(color + " is in checkmate!");
+			return null; // Game over - checkmate
+		}
 		
-		// Generate all legal moves
+		if (board.isStalemate(color)) {
+			System.out.println(color + " is in stalemate (draw)!");
+			return null; // Game over - stalemate (draw)
+		}
+		
+		List<ChessMove> allMoves = new ArrayList<>();
+		List<ChessMove> checkmateMoves = new ArrayList<>();
+		
+		// Generate all legal moves and identify checkmate moves
 		for (int fromRow = 0; fromRow < ChessBoard.SIZE; fromRow++) {
 			for (int fromCol = 0; fromCol < ChessBoard.SIZE; fromCol++) {
 				ChessPiece piece = board.getPiece(fromRow, fromCol);
@@ -45,9 +56,11 @@ public class ChessAIIntermediate {
 						
 						allMoves.add(move);
 						
-						ChessPiece target = board.getPiece(toRow, toCol);
-						if (target != null && target.getColor() != color) {
-							captureMoves.add(move);
+						// Check if this move leads to checkmate
+						ChessBoard testBoard = copyBoard(board);
+						testBoard.applyMove(move);
+						if (testBoard.isCheckmate(color.opposite())) {
+							checkmateMoves.add(move);
 						}
 					}
 				}
@@ -55,15 +68,18 @@ public class ChessAIIntermediate {
 		}
 		
 		if (allMoves.isEmpty()) {
-			return null; // Checkmate or stalemate
+			// This shouldn't happen as we checked above, but safety check
+			return null;
 		}
 		
-		// Evaluate and choose best move
-		if (!captureMoves.isEmpty()) {
-			return chooseBestMove(board, captureMoves, color);
-		} else {
-			return chooseBestMove(board, allMoves, color);
+		// Always play checkmate if available!
+		if (!checkmateMoves.isEmpty()) {
+			System.out.println("AI found checkmate move!");
+			return checkmateMoves.get(random.nextInt(checkmateMoves.size()));
 		}
+		
+		// Evaluate and choose best move from all legal moves
+		return chooseBestMove(board, allMoves, color);
 	}
 	
 	/**
@@ -99,7 +115,7 @@ public class ChessAIIntermediate {
 	 * Evaluate the board position from the perspective of the given color.
 	 * Positive score = good for the color, negative = bad for the color.
 	 * 
-	 * This uses material counting: the total value of all pieces.
+	 * This uses material counting plus positional bonuses.
 	 */
 	private int evaluatePosition(ChessBoard board, ChessColor color) {
 		int score = 0;
@@ -112,17 +128,111 @@ public class ChessAIIntermediate {
 				}
 				
 				int pieceValue = getPieceValue(piece.getType());
+				int positionalBonus = getPositionalBonus(piece, row, col);
 				
 				// Add to our score if it's our piece, subtract if opponent's
 				if (piece.getColor() == color) {
-					score += pieceValue;
+					score += pieceValue + positionalBonus;
 				} else {
-					score -= pieceValue;
+					score -= pieceValue + positionalBonus;
 				}
 			}
 		}
 		
+		// Bonus for having the opponent in check
+		if (board.isInCheck(color.opposite())) {
+			score += 50;
+		}
+		
+		// Penalty for being in check ourselves
+		if (board.isInCheck(color)) {
+			score -= 50;
+		}
+		
+		// Bonus for mobility (number of legal moves available)
+		int ourMobility = countLegalMoves(board, color);
+		int theirMobility = countLegalMoves(board, color.opposite());
+		score += (ourMobility - theirMobility) * 2;
+		
 		return score;
+	}
+	
+	/**
+	 * Get positional bonuses for piece placement.
+	 * Central squares are more valuable, and pieces should be developed.
+	 */
+	private int getPositionalBonus(ChessPiece piece, int row, int col) {
+		int bonus = 0;
+		
+		// Center control bonus (squares d4, d5, e4, e5 are most valuable)
+		double centerDistance = Math.abs(3.5 - row) + Math.abs(3.5 - col);
+		
+		switch (piece.getType()) {
+			case PAWN:
+				// Pawns are better when advanced
+				bonus = (piece.getColor() == ChessColor.WHITE) ? row * 5 : (7 - row) * 5;
+				// Bonus for center pawns
+				if (col >= 2 && col <= 5) bonus += 10;
+				break;
+				
+			case KNIGHT:
+				// Knights are best in the center
+				bonus = (int) (20 - centerDistance * 5);
+				break;
+				
+			case BISHOP:
+				// Bishops like center and diagonals
+				bonus = (int) (15 - centerDistance * 3);
+				break;
+				
+			case ROOK:
+				// Rooks prefer open files (simplified: just give small center bonus)
+				bonus = (int) (5 - centerDistance * 1);
+				break;
+				
+			case QUEEN:
+				// Queen developed too early can be vulnerable, slight center preference
+				bonus = (int) (10 - centerDistance * 2);
+				break;
+				
+			case KING:
+				// King should stay safe (near corners/back rank in opening/middlegame)
+				// This is simplified - in endgame king should be centralized
+				boolean backRank = (piece.getColor() == ChessColor.WHITE && row <= 1) || 
+				                   (piece.getColor() == ChessColor.BLACK && row >= 6);
+				if (backRank) bonus += 20;
+				break;
+		}
+		
+		return bonus;
+	}
+	
+	/**
+	 * Count the number of legal moves available for a given color.
+	 * More moves = better mobility and control.
+	 */
+	private int countLegalMoves(ChessBoard board, ChessColor color) {
+		int count = 0;
+		
+		for (int fromRow = 0; fromRow < ChessBoard.SIZE; fromRow++) {
+			for (int fromCol = 0; fromCol < ChessBoard.SIZE; fromCol++) {
+				ChessPiece piece = board.getPiece(fromRow, fromCol);
+				if (piece == null || piece.getColor() != color) {
+					continue;
+				}
+				
+				for (int toRow = 0; toRow < ChessBoard.SIZE; toRow++) {
+					for (int toCol = 0; toCol < ChessBoard.SIZE; toCol++) {
+						ChessMove move = new ChessMove(fromRow, fromCol, toRow, toCol);
+						if (board.isLegalMove(move, color)) {
+							count++;
+						}
+					}
+				}
+			}
+		}
+		
+		return count;
 	}
 	
 	/**

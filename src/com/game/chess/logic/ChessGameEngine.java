@@ -5,14 +5,17 @@ public class ChessGameEngine {
 	public enum AILevel {
         NONE,
         BEGINNER,
-        INTERMEDIATE
+        INTERMEDIATE,
+        ADVANCED
     }
 
 	private final ChessBoard board;
     private ChessColor currentPlayer;
     private final AILevel aiLevel;
+    private ChessColor aiColor; // The color the AI plays (null for two-player mode)
     private final ChessAI basicAI;
     private final ChessAIIntermediate intermediateAI;
+    private final ChessAIAdvanced advancedAI;
     private int moveCount;
     private boolean gameEnded;
 
@@ -20,10 +23,24 @@ public class ChessGameEngine {
         this.board = new ChessBoard();
         this.currentPlayer = ChessColor.WHITE;
         this.aiLevel = aiLevel;
+        this.aiColor = (aiLevel != AILevel.NONE) ? ChessColor.BLACK : null; // Default: AI plays black
         this.basicAI = (aiLevel == AILevel.BEGINNER) ? new ChessAI() : null;
         this.intermediateAI = (aiLevel == AILevel.INTERMEDIATE) ? new ChessAIIntermediate() : null;
+        this.advancedAI = (aiLevel == AILevel.ADVANCED) ? new ChessAIAdvanced() : null;
         this.moveCount = 0;
         this.gameEnded = false;
+    }
+    
+    /**
+     * Set which color the AI plays (and player plays opposite).
+     * Must be called before the game starts.
+     */
+    public void setAIColor(ChessColor color) {
+        this.aiColor = color;
+    }
+    
+    public ChessColor getAIColor() {
+        return aiColor;
     }
     
     // Deprecated constructor for backward compatibility
@@ -65,7 +82,7 @@ public class ChessGameEngine {
     }
     
     public void makeComputerMoveIfNeeded() {
-        if (aiLevel != AILevel.NONE && currentPlayer == ChessColor.BLACK) {
+        if (aiLevel != AILevel.NONE && aiColor != null && currentPlayer == aiColor) {
             ChessMove move = null;
             
             // Choose AI based on difficulty level
@@ -73,6 +90,8 @@ public class ChessGameEngine {
                 move = basicAI.chooseMove(board, currentPlayer);
             } else if (aiLevel == AILevel.INTERMEDIATE && intermediateAI != null) {
                 move = intermediateAI.chooseMove(board, currentPlayer);
+            } else if (aiLevel == AILevel.ADVANCED && advancedAI != null) {
+                move = advancedAI.chooseMove(board, currentPlayer);
             }
             
             if (move != null) {
