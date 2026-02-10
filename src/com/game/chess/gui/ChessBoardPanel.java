@@ -119,6 +119,9 @@ public class ChessBoardPanel extends JPanel implements ActionListener {
                     guiManager.handleGameEnd(false);
                     return;
                 }
+            } else {
+                // Illegal move attempted
+                guiManager.showIllegalMoveMessage();
             }
         }
     }

@@ -7,6 +7,8 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -35,19 +37,29 @@ public class ChessGUIManager extends JFrame {
     private String playerName;
     private ChessGameEngine.AILevel selectedAILevel;
     private ChessColor playerColor; // Track which color the player chose
+    private boolean isOnGameBoard; // Track if we're currently on the game board screen
 
     public ChessGUIManager() {
         setTitle("Chess Game");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setSize(800, 800); // Default size, will be adjusted per screen
         setLocationRelativeTo(null);
         
         leaderboardManager = new LeaderboardManager();
+        
+        // Add window listener to handle close button (X) clicks
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                handleWindowClose();
+            }
+        });
 
         showModeSelectionScreen();
     }
 
     private void showModeSelectionScreen() {
+        isOnGameBoard = false; // We're leaving the game board
         getContentPane().removeAll();
         setSize(650, 480); // Increased size to accommodate emoji buttons with text
         setLocationRelativeTo(null); // Re-center after resize
@@ -290,18 +302,24 @@ public class ChessGUIManager extends JFrame {
         
         JLabel newStatusLabel = new JLabel("White to move");
         newStatusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        newStatusLabel.setFont(new Font("Arial", Font.BOLD, 18)); // Make status messages bigger
         
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton resignBtn = new JButton("Resign");
-        JButton drawBtn = new JButton("Declare Draw");
         JButton backBtn = new JButton("Main Menu");
         
         resignBtn.addActionListener(e -> handleResign());
-        drawBtn.addActionListener(e -> handleDraw());
-        backBtn.addActionListener(e -> showModeSelectionScreen());
+        backBtn.addActionListener(e -> handleMainMenuClick());
         
         topPanel.add(resignBtn);
-        topPanel.add(drawBtn);
+        
+        // Only add "Declare Draw" button in two-player mode
+        if (aiLevel == ChessGameEngine.AILevel.NONE) {
+            JButton drawBtn = new JButton("Declare Draw");
+            drawBtn.addActionListener(e -> handleDraw());
+            topPanel.add(drawBtn);
+        }
+        
         topPanel.add(backBtn);
         
         // Now update the window all at once
@@ -315,6 +333,8 @@ public class ChessGUIManager extends JFrame {
         // Assign to instance variables
         boardPanel = newBoardPanel;
         statusLabel = newStatusLabel;
+        
+        isOnGameBoard = true; // We're now on the game board screen
         
         // Resize window for chess board
         setSize(800, 800);
@@ -346,7 +366,7 @@ public class ChessGUIManager extends JFrame {
          
          // Check game state and display appropriate warning
          if (engine.getBoard().isCheckmate(current)) {
-             statusLabel.setText("⚠️ CHECKMATE! " + playerName + " has been checkmated!");
+             statusLabel.setText("CHECKMATE! " + playerName + " has been checkmated!");
              statusLabel.setForeground(Color.RED);
              JOptionPane.showMessageDialog(this, 
                  playerName + " is in CHECKMATE!\nGame Over!", 
@@ -356,7 +376,7 @@ public class ChessGUIManager extends JFrame {
          }
          
          if (engine.getBoard().isStalemate(current)) {
-             statusLabel.setText("⚠️ STALEMATE! " + playerName + " has no legal moves - Game is a draw!");
+             statusLabel.setText("STALEMATE! " + playerName + " has no legal moves - Game is a draw!");
              statusLabel.setForeground(Color.ORANGE);
              JOptionPane.showMessageDialog(this, 
                  playerName + " is in STALEMATE!\nNo legal moves available. Game is a draw!", 
@@ -366,13 +386,71 @@ public class ChessGUIManager extends JFrame {
          }
          
          if (engine.getBoard().isInCheck(current)) {
-             statusLabel.setText("⚠️ CHECK! " + playerName + " is in check - must escape!");
+             statusLabel.setText("CHECK! " + playerName + " is in check - must escape!");
              statusLabel.setForeground(Color.RED);
          } else {
              String text = playerName + " to move";
              statusLabel.setText(text);
              statusLabel.setForeground(Color.BLACK);
          }
+	}
+	
+	public void showIllegalMoveMessage() {
+	    if (statusLabel == null) {
+	        return;
+	    }
+	    
+	    statusLabel.setText("ILLEGAL MOVE! That move is not allowed. Try again.");
+	    statusLabel.setForeground(Color.RED);
+	    
+	    // Restore the normal status message after a short delay
+	    javax.swing.Timer timer = new javax.swing.Timer(2000, e -> updateStatusLabel());
+	    timer.setRepeats(false);
+	    timer.start();
+	}
+	
+	private void handleWindowClose() {
+	    // Only show confirmation if we're on the game board with an active game
+	    if (isOnGameBoard && engine != null && !engine.isGameEnded()) {
+	        int choice = JOptionPane.showConfirmDialog(
+	            this,
+	            "Are you sure you want to exit?\n\nThe current game will be lost.",
+	            "Exit Game",
+	            JOptionPane.YES_NO_OPTION,
+	            JOptionPane.WARNING_MESSAGE
+	        );
+	        
+	        if (choice == JOptionPane.YES_OPTION) {
+	            dispose();
+	            System.exit(0);
+	        }
+	        // If NO or dialog closed, do nothing - game continues
+	    } else {
+	        // On main menu or other screens - close directly without confirmation
+	        dispose();
+	        System.exit(0);
+	    }
+	}
+	
+	private void handleMainMenuClick() {
+	    // If game hasn't started or has already ended, go directly to main menu
+	    if (engine == null || engine.isGameEnded()) {
+	        showModeSelectionScreen();
+	        return;
+	    }
+	    
+	    // Game is still active - show confirmation dialog
+	    int choice = JOptionPane.showConfirmDialog(
+	        this,
+	        "Are you sure you want to exit to the main menu?\n\nThe current game will be lost.",
+	        "Exit to Main Menu",
+	        JOptionPane.YES_NO_OPTION,
+	        JOptionPane.WARNING_MESSAGE
+	    );
+	    
+	    if (choice == JOptionPane.YES_OPTION) {
+	        showModeSelectionScreen();
+	    }
 	}
 	
 	private void handleResign() {
@@ -388,7 +466,7 @@ public class ChessGUIManager extends JFrame {
 	    );
 	    
 	    if (choice == JOptionPane.YES_OPTION) {
-	        engine.setGameEnded(true);
+	        // Don't set game ended here - let handleGameEnd do it
 	        handleGameEnd(false); // Player lost
 	    }
 	}
@@ -398,17 +476,52 @@ public class ChessGUIManager extends JFrame {
 	        return;
 	    }
 	    
-	    int choice = JOptionPane.showConfirmDialog(
+	    // Only available in two-player mode
+	    if (engine.getAILevel() != ChessGameEngine.AILevel.NONE) {
+	        return;
+	    }
+	    
+	    // First dialog: Current player offers draw
+	    String currentPlayerName = (engine.getCurrentPlayer() == ChessColor.WHITE) ? "White" : "Black";
+	    int offerChoice = JOptionPane.showConfirmDialog(
 	        this,
-	        "Declare this game as a draw?",
-	        "Draw Game",
+	        currentPlayerName + ", do you want to offer a draw to your opponent?",
+	        "Offer Draw",
 	        JOptionPane.YES_NO_OPTION
 	    );
 	    
-	    if (choice == JOptionPane.YES_OPTION) {
+	    if (offerChoice != JOptionPane.YES_OPTION) {
+	        return; // Player canceled the offer
+	    }
+	    
+	    // Second dialog: Opponent accepts or declines
+	    String opponentName = (engine.getCurrentPlayer() == ChessColor.WHITE) ? "Black" : "White";
+	    int acceptChoice = JOptionPane.showConfirmDialog(
+	        this,
+	        opponentName + ", " + currentPlayerName + " has offered a draw.\n\nDo you accept the draw?",
+	        "Draw Offer",
+	        JOptionPane.YES_NO_OPTION
+	    );
+	    
+	    if (acceptChoice == JOptionPane.YES_OPTION) {
+	        // Draw accepted
 	        engine.setGameEnded(true);
-	        JOptionPane.showMessageDialog(this, "Game ended in a draw!");
+	        
+	        String message = String.format(
+	            "Game ended in a draw by mutual agreement!\n\nMoves played: %d",
+	            engine.getMoveCount()
+	        );
+	        
+	        JOptionPane.showMessageDialog(this, message, "Draw", JOptionPane.INFORMATION_MESSAGE);
 	        showModeSelectionScreen();
+	    } else {
+	        // Draw declined
+	        JOptionPane.showMessageDialog(
+	            this,
+	            opponentName + " declined the draw offer. The game continues.",
+	            "Draw Declined",
+	            JOptionPane.INFORMATION_MESSAGE
+	        );
 	    }
 	}
 	
@@ -433,11 +546,11 @@ public class ChessGUIManager extends JFrame {
 	        opponentType = "Advanced AI";
 	    }
 	    
-	    String message = playerWon ? 
-	        String.format("Congratulations %s! You won!\n\nYour Score: %d points\nMoves: %d\nOpponent: %s", 
-	            playerName, score, engine.getMoveCount(), opponentType) :
-	        String.format("Game Over! You lost.\n\nYour Score: %d points\nMoves: %d\nOpponent: %s", 
-	            playerName, score, engine.getMoveCount(), opponentType);
+    String message = playerWon ? 
+        String.format("Congratulations %s! You won!\n\nYour Score: %d points\nMoves: %d\nOpponent: %s", 
+            playerName, score, engine.getMoveCount(), opponentType) :
+        String.format("Game Over %s! You lost.\n\nYour Score: %d points\nMoves: %d\nOpponent: %s", 
+            playerName, score, engine.getMoveCount(), opponentType);
 	    
 	    JOptionPane.showMessageDialog(this, message);
 	    
@@ -492,17 +605,19 @@ public class ChessGUIManager extends JFrame {
 	}
 	
 	private void showLeaderboard() {
+	    isOnGameBoard = false; // We're leaving the game board
 	    getContentPane().removeAll();
 	    setSize(700, 500); // Appropriate size for leaderboard
 	    setLocationRelativeTo(null); // Re-center after resize
 	    
-	    JPanel leaderboardPanel = new JPanel(new BorderLayout(10, 10));
-	    leaderboardPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-	    
-	    JLabel titleLabel = new JLabel("🏆 Leaderboard - Top 10 Players");
-	    titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-	    titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-	    leaderboardPanel.add(titleLabel, BorderLayout.NORTH);
+    JPanel leaderboardPanel = new JPanel(new BorderLayout(10, 10));
+    leaderboardPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    
+    JLabel titleLabel = new JLabel("Leaderboard - Top 10 Players");
+    titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+    titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+    titleLabel.setForeground(Color.BLACK); // Ensure text color is visible
+    leaderboardPanel.add(titleLabel, BorderLayout.NORTH);
 	    
 	    JTextArea leaderboardText = new JTextArea();
 	    leaderboardText.setEditable(false);
