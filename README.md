@@ -1,4 +1,4 @@
-# Chess Game
+# ABCD-Chess-Game
 
 This project is a fully-featured Java-based Chess Game that I developed in my spare time. It includes multiple AI difficulty levels, a comprehensive leaderboard system, and an intuitive graphical interface. The game was created as a way to practice Java programming, game logic implementation, and GUI design with the help of GitHub Copilot.
 
