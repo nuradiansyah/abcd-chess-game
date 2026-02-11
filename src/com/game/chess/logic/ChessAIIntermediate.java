@@ -47,6 +47,21 @@ public class ChessAIIntermediate {
 				if (piece == null || piece.getColor() != color) {
 					continue;
 				}
+				
+				// Check for castling moves if this is a king
+				if (piece.getType() == ChessPieceType.KING) {
+					// Try kingside castling
+					ChessMove kingsideCastle = new ChessMove(fromRow, fromCol, fromRow, fromCol + 2, true);
+					if (board.isLegalMove(kingsideCastle, color)) {
+						allMoves.add(kingsideCastle);
+					}
+					// Try queenside castling
+					ChessMove queensideCastle = new ChessMove(fromRow, fromCol, fromRow, fromCol - 2, true);
+					if (board.isLegalMove(queensideCastle, color)) {
+						allMoves.add(queensideCastle);
+					}
+				}
+				
 				for (int toRow = 0; toRow < ChessBoard.SIZE; toRow++) {
 					for (int toCol = 0; toCol < ChessBoard.SIZE; toCol++) {
 						ChessMove move = new ChessMove(fromRow, fromCol, toRow, toCol);
@@ -219,6 +234,20 @@ public class ChessAIIntermediate {
 				ChessPiece piece = board.getPiece(fromRow, fromCol);
 				if (piece == null || piece.getColor() != color) {
 					continue;
+				}
+				
+				// Check for castling moves if this is a king
+				if (piece.getType() == ChessPieceType.KING) {
+					// Try kingside castling
+					ChessMove kingsideCastle = new ChessMove(fromRow, fromCol, fromRow, fromCol + 2, true);
+					if (board.isLegalMove(kingsideCastle, color)) {
+						count++;
+					}
+					// Try queenside castling
+					ChessMove queensideCastle = new ChessMove(fromRow, fromCol, fromRow, fromCol - 2, true);
+					if (board.isLegalMove(queensideCastle, color)) {
+						count++;
+					}
 				}
 				
 				for (int toRow = 0; toRow < ChessBoard.SIZE; toRow++) {

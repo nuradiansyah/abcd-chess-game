@@ -12,6 +12,7 @@ This project is a fully-featured Java-based Chess Game that I developed in my sp
 
 ### Chess Features
 - **Full Chess Rules Implementation**: All standard chess rules including castling, en passant, and pawn promotion
+  - 📖 [Learn about Castling Implementation](docs/CASTLING.md)
 - **Legal Move Validation**: Only legal moves are allowed, preventing moves that would put your own king in check
 - **Check & Checkmate Detection**: Automatic detection of check, checkmate, and stalemate conditions
 - **Visual Feedback**: Clear highlighting of selected pieces, possible moves, and check warnings
@@ -26,6 +27,7 @@ This project is a fully-featured Java-based Chess Game that I developed in my sp
   - **Efficiency Bonus**: Up to 500 bonus points for winning with fewer moves
 - **Persistent Storage**: Leaderboard data saved locally in `chess_leaderboard.dat`
 - **Detailed Statistics**: Track player names, scores, wins, move counts, and opponent types
+- 📖 [Complete Leaderboard & Scoring Guide](docs/LEADERBOARD.md)
 
 ### User Interface
 - **Clean Design**: Modern Swing-based GUI with intuitive controls
@@ -102,6 +104,8 @@ Beat Intermediate AI in 30 moves:
 - Strategic planning and tactical awareness
 - Most challenging opponent
 
+📖 **[Detailed AI System Documentation](docs/AI_SYSTEM.md)** - Learn about the algorithms, evaluation functions, and implementation details
+
 ## 🛠️ Technical Details
 
 ### Architecture
@@ -141,9 +145,11 @@ chess_game_project/
 │   │   └── LeaderboardEntry.java      (Score data model)
 │   └── resources/                     (Image assets)
 ├── resources/images/chess/            (Chess piece images)
+├── docs/                              (📚 Documentation)
+│   ├── AI_SYSTEM.md                   (AI algorithms & implementation)
+│   ├── CASTLING.md                    (Castling feature guide)
+│   └── LEADERBOARD.md                 (Scoring system details)
 ├── chess_leaderboard.dat              (Leaderboard data file)
-├── AI_IMPROVEMENTS.md                 (AI development notes)
-├── LEADERBOARD_README.md              (Detailed scoring info)
 └── README.md                          (This file)
 ```
 
@@ -160,6 +166,16 @@ cd chess_game_project/src
 javac com/game/chess/gui/ChessGUIManager.java
 java com.game.chess.gui.ChessGUIManager
 ```
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the `docs/` folder:
+
+- **[AI System Documentation](docs/AI_SYSTEM.md)** - Deep dive into the three AI difficulty levels, including algorithms (random, evaluation-based, minimax with alpha-beta pruning), piece values, positional bonuses, and strategic decision-making
+  
+- **[Castling Implementation Guide](docs/CASTLING.md)** - Complete explanation of the castling feature including all chess rules, how to use it in the game, implementation details, and testing instructions
+
+- **[Leaderboard & Scoring System](docs/LEADERBOARD.md)** - Detailed breakdown of the scoring formula, difficulty multipliers, efficiency bonuses, with examples and tips to maximize your score
 
 ## 🎓 Learning Outcomes
 

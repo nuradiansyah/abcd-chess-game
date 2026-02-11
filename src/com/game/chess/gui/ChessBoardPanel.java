@@ -94,7 +94,17 @@ public class ChessBoardPanel extends JPanel implements ActionListener {
             }
         } else {
             // second click: attempt move
-            ChessMove move = new ChessMove(selectedRow, selectedCol, row, col);
+            // Check if this is a castling move (king moves 2 squares horizontally)
+            ChessPiece selectedPiece = engine.getBoard().getPiece(selectedRow, selectedCol);
+            boolean isCastling = false;
+            if (selectedPiece != null && selectedPiece.getType() == com.game.chess.logic.ChessPieceType.KING) {
+                int dc = Math.abs(col - selectedCol);
+                if (selectedRow == row && dc == 2) {
+                    isCastling = true;
+                }
+            }
+            
+            ChessMove move = new ChessMove(selectedRow, selectedCol, row, col, isCastling);
             boolean ok = engine.makePlayerMove(move);
             selectedRow = -1;
             selectedCol = -1;

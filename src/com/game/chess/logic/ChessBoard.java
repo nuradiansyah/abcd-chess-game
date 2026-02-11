@@ -5,6 +5,14 @@ public class ChessBoard {
 	public static final int SIZE = 8;
 
     private final ChessPiece[][] board = new ChessPiece[SIZE][SIZE];
+    
+    // Track if kings and rooks have moved (for castling)
+    private boolean whiteKingMoved = false;
+    private boolean blackKingMoved = false;
+    private boolean whiteRookKingsideMoved = false;
+    private boolean whiteRookQueensideMoved = false;
+    private boolean blackRookKingsideMoved = false;
+    private boolean blackRookQueensideMoved = false;
 
     public ChessBoard() {
         setupInitialPosition();
@@ -49,8 +57,51 @@ public class ChessBoard {
 
     public void applyMove(ChessMove move) {
         ChessPiece piece = board[move.getFromRow()][move.getFromCol()];
-        board[move.getFromRow()][move.getFromCol()] = null;
-        board[move.getToRow()][move.getToCol()] = piece;
+        int fromRow = move.getFromRow();
+        int fromCol = move.getFromCol();
+        int toRow = move.getToRow();
+        int toCol = move.getToCol();
+        
+        // Track king and rook movements for castling
+        if (piece != null) {
+            if (piece.getType() == ChessPieceType.KING) {
+                if (piece.getColor() == ChessColor.WHITE) {
+                    whiteKingMoved = true;
+                } else {
+                    blackKingMoved = true;
+                }
+            } else if (piece.getType() == ChessPieceType.ROOK) {
+                if (piece.getColor() == ChessColor.WHITE) {
+                    if (fromRow == 0 && fromCol == 0) whiteRookQueensideMoved = true;
+                    if (fromRow == 0 && fromCol == 7) whiteRookKingsideMoved = true;
+                } else {
+                    if (fromRow == 7 && fromCol == 0) blackRookQueensideMoved = true;
+                    if (fromRow == 7 && fromCol == 7) blackRookKingsideMoved = true;
+                }
+            }
+        }
+        
+        // Handle castling move
+        if (move.isCastling() && piece != null && piece.getType() == ChessPieceType.KING) {
+            // Move the king
+            board[fromRow][fromCol] = null;
+            board[toRow][toCol] = piece;
+            
+            // Move the rook
+            if (toCol == 6) { // Kingside castling
+                ChessPiece rook = board[fromRow][7];
+                board[fromRow][7] = null;
+                board[fromRow][5] = rook;
+            } else if (toCol == 2) { // Queenside castling
+                ChessPiece rook = board[fromRow][0];
+                board[fromRow][0] = null;
+                board[fromRow][3] = rook;
+            }
+        } else {
+            // Normal move
+            board[fromRow][fromCol] = null;
+            board[toRow][toCol] = piece;
+        }
     }
     
     public boolean isKingCaptured(ChessColor color) {
@@ -94,11 +145,24 @@ public class ChessBoard {
             for (int col = 0; col < SIZE; col++) {
                 ChessPiece piece = board[row][col];
                 if (piece != null && piece.getColor() == opponentColor) {
-                    ChessMove attackMove = new ChessMove(row, col, kingRow, kingCol);
-                    // Check if this piece can legally move to the king's position
-                    // We use a simplified check that doesn't verify if the move leaves the attacker's king in check
-                    if (isLegalMoveIgnoringCheck(attackMove, opponentColor)) {
-                        return true;
+                    // Special handling for enemy king: a king cannot attack a square
+                    // adjacent to it if that square is occupied by the enemy king
+                    // This prevents false positives when validating king moves
+                    if (piece.getType() == ChessPieceType.KING) {
+                        int dr = Math.abs(kingRow - row);
+                        int dc = Math.abs(kingCol - col);
+                        // Kings cannot be adjacent (both would be "in check")
+                        // This is correctly handled - if kings are 1 square apart, they attack each other
+                        if (dr <= 1 && dc <= 1 && (dr != 0 || dc != 0)) {
+                            return true;
+                        }
+                    } else {
+                        ChessMove attackMove = new ChessMove(row, col, kingRow, kingCol);
+                        // Check if this piece can legally move to the king's position
+                        // We use a simplified check that doesn't verify if the move leaves the attacker's king in check
+                        if (isLegalMoveIgnoringCheck(attackMove, opponentColor)) {
+                            return true;
+                        }
                     }
                 }
             }
@@ -222,6 +286,7 @@ public class ChessBoard {
 
         // Check piece-specific movement rules first
         boolean validMove = false;
+        boolean isCastlingMove = false;
         switch (piece.getType()) {
             case PAWN:
                 validMove = isLegalPawnMove(fromRow, fromCol, toRow, toCol, piece.getColor(), target);
@@ -239,7 +304,14 @@ public class ChessBoard {
                 validMove = isLegalQueenMove(fromRow, fromCol, toRow, toCol);
                 break;
             case KING:
-                validMove = isLegalKingMove(fromRow, fromCol, toRow, toCol);
+                // Check if this is a castling move (king moves 2 squares horizontally)
+                int dc = Math.abs(toCol - fromCol);
+                if (fromRow == toRow && dc == 2) {
+                    isCastlingMove = true;
+                    validMove = canCastle(fromRow, fromCol, toRow, toCol, piece.getColor());
+                } else {
+                    validMove = isLegalKingMove(fromRow, fromCol, toRow, toCol);
+                }
                 break;
             default:
                 return false;
@@ -247,6 +319,12 @@ public class ChessBoard {
         
         if (!validMove) {
             return false;
+        }
+        
+        // For castling, we already checked that the king doesn't pass through check
+        // No need to do the standard "leaves king in check" test
+        if (isCastlingMove) {
+            return true;
         }
         
         // Critical: Check if this move would leave our king in check
@@ -310,7 +388,22 @@ public class ChessBoard {
     private boolean isLegalKingMove(int fromRow, int fromCol, int toRow, int toCol) {
         int dr = Math.abs(toRow - fromRow);
         int dc = Math.abs(toCol - fromCol);
-        return dr <= 1 && dc <= 1;
+        
+        // Normal king move (one square in any direction)
+        if (dr <= 1 && dc <= 1) {
+            return true;
+        }
+        
+        // Check for castling (king moves 2 squares horizontally)
+        if (dr == 0 && dc == 2) {
+            ChessPiece king = board[fromRow][fromCol];
+            if (king == null || king.getType() != ChessPieceType.KING) {
+                return false;
+            }
+            return canCastle(fromRow, fromCol, toRow, toCol, king.getColor());
+        }
+        
+        return false;
     }
     
     private boolean isLegalPawnMove(int fromRow, int fromCol, int toRow, int toCol,
@@ -344,5 +437,117 @@ public class ChessBoard {
 		
 			return false;
 		}
+    
+    /**
+     * Check if castling is legal for the given king move.
+     * Castling requirements:
+     * 1. King and rook haven't moved
+     * 2. No pieces between king and rook
+     * 3. King is not in check
+     * 4. King doesn't pass through or land on attacked square
+     */
+    private boolean canCastle(int fromRow, int fromCol, int toRow, int toCol, ChessColor color) {
+        // King must be on starting square
+        int expectedRow = (color == ChessColor.WHITE) ? 0 : 7;
+        if (fromRow != expectedRow || fromCol != 4) {
+            return false;
+        }
+        
+        // Check if king has moved
+        if (color == ChessColor.WHITE && whiteKingMoved) {
+            return false;
+        }
+        if (color == ChessColor.BLACK && blackKingMoved) {
+            return false;
+        }
+        
+        // King cannot be in check
+        if (isInCheck(color)) {
+            return false;
+        }
+        
+        boolean isKingside = (toCol == 6);
+        boolean isqueenside = (toCol == 2);
+        
+        if (isKingside) {
+            // Kingside castling (O-O)
+            // Check if rook has moved
+            if (color == ChessColor.WHITE && whiteRookKingsideMoved) {
+                return false;
+            }
+            if (color == ChessColor.BLACK && blackRookKingsideMoved) {
+                return false;
+            }
+            
+            // Check if rook is still there
+            ChessPiece rook = board[fromRow][7];
+            if (rook == null || rook.getType() != ChessPieceType.ROOK || rook.getColor() != color) {
+                return false;
+            }
+            
+            // Check if squares between king and rook are empty
+            if (board[fromRow][5] != null || board[fromRow][6] != null) {
+                return false;
+            }
+            
+            // Check if king passes through or lands on attacked square
+            if (isSquareUnderAttack(fromRow, 5, color) || isSquareUnderAttack(fromRow, 6, color)) {
+                return false;
+            }
+            
+            return true;
+        } else if (isqueenside) {
+            // Queenside castling (O-O-O)
+            // Check if rook has moved
+            if (color == ChessColor.WHITE && whiteRookQueensideMoved) {
+                return false;
+            }
+            if (color == ChessColor.BLACK && blackRookQueensideMoved) {
+                return false;
+            }
+            
+            // Check if rook is still there
+            ChessPiece rook = board[fromRow][0];
+            if (rook == null || rook.getType() != ChessPieceType.ROOK || rook.getColor() != color) {
+                return false;
+            }
+            
+            // Check if squares between king and rook are empty
+            if (board[fromRow][1] != null || board[fromRow][2] != null || board[fromRow][3] != null) {
+                return false;
+            }
+            
+            // Check if king passes through or lands on attacked square
+            // Note: square at col 1 doesn't need to be safe, only 2 and 3
+            if (isSquareUnderAttack(fromRow, 2, color) || isSquareUnderAttack(fromRow, 3, color)) {
+                return false;
+            }
+            
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if a square is under attack by the opponent.
+     */
+    private boolean isSquareUnderAttack(int row, int col, ChessColor kingColor) {
+        ChessColor opponentColor = kingColor.opposite();
+        
+        for (int r = 0; r < SIZE; r++) {
+            for (int c = 0; c < SIZE; c++) {
+                ChessPiece piece = board[r][c];
+                if (piece != null && piece.getColor() == opponentColor) {
+                    ChessMove attackMove = new ChessMove(r, c, row, col);
+                    if (isLegalMoveIgnoringCheck(attackMove, opponentColor)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return false;
+    }
 	
 	}
