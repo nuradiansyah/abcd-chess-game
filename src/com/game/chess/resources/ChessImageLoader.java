@@ -12,6 +12,10 @@ public class ChessImageLoader {
 	private static final int PIECE_SIZE = 64;
 
     public static ImageIcon loadPieceIcon(ChessPieceType type, ChessColor color) {
+        return loadPieceIcon(type, color, PIECE_SIZE);
+    }
+    
+    public static ImageIcon loadPieceIcon(ChessPieceType type, ChessColor color, int size) {
         String colorName = color == ChessColor.WHITE ? "white" : "black";
         String fileName = "/images/chess/" + colorName + "-" + type.name().toLowerCase() + ".png";
 
@@ -21,7 +25,7 @@ public class ChessImageLoader {
             return null;
         }
         ImageIcon icon = new ImageIcon(resource);
-        Image scaled = icon.getImage().getScaledInstance(PIECE_SIZE, PIECE_SIZE, Image.SCALE_SMOOTH);
+        Image scaled = icon.getImage().getScaledInstance(size, size, Image.SCALE_SMOOTH);
         return new ImageIcon(scaled);
     }
 

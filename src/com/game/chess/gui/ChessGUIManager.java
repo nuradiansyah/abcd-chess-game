@@ -32,6 +32,7 @@ public class ChessGUIManager extends JFrame {
 
     private ChessGameEngine engine;
     private ChessBoardPanel boardPanel;
+    private CapturedPiecesPanel capturedPiecesPanel;
     private JLabel statusLabel;
     private LeaderboardManager leaderboardManager;
     private String playerName;
@@ -43,6 +44,7 @@ public class ChessGUIManager extends JFrame {
         setTitle("Chess Game");
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setSize(800, 800); // Default size, will be adjusted per screen
+        setResizable(false); // Fixed size window - cannot be resized
         setLocationRelativeTo(null);
         
         leaderboardManager = new LeaderboardManager();
@@ -65,6 +67,7 @@ public class ChessGUIManager extends JFrame {
         setLocationRelativeTo(null); // Re-center after resize
 
         JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         JLabel title = new JLabel("Choose Game Mode");
         title.setFont(new Font("Arial", Font.BOLD, 24));
@@ -138,15 +141,27 @@ public class ChessGUIManager extends JFrame {
 
             JPanel inputPanel = new JPanel(new GridLayout(3, 2, 10, 10));
 
-            JLabel whiteLabel = new JLabel("White Player:");
-            whiteLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+            JLabel whiteLabel = new JLabel("⬜ White Player:");
+            whiteLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            whiteLabel.setForeground(new Color(50, 50, 100));
+            
             JTextField whiteField = new JTextField("White Player");
-            whiteField.setFont(new Font("Arial", Font.PLAIN, 16));
+            whiteField.setFont(new Font("Arial", Font.BOLD, 16));
+            whiteField.setBackground(new Color(255, 255, 240));
+            whiteField.setForeground(new Color(30, 30, 80));
+            whiteField.setBorder(new RoundedBorder(new Color(100, 150, 200), 2, 15));
+            whiteField.setCaretColor(new Color(50, 50, 150));
 
-            JLabel blackLabel = new JLabel("Black Player:");
-            blackLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+            JLabel blackLabel = new JLabel("⬛ Black Player:");
+            blackLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            blackLabel.setForeground(new Color(50, 50, 100));
+            
             JTextField blackField = new JTextField("Black Player");
-            blackField.setFont(new Font("Arial", Font.PLAIN, 16));
+            blackField.setFont(new Font("Arial", Font.BOLD, 16));
+            blackField.setBackground(new Color(255, 255, 240));
+            blackField.setForeground(new Color(30, 30, 80));
+            blackField.setBorder(new RoundedBorder(new Color(100, 150, 200), 2, 15));
+            blackField.setCaretColor(new Color(50, 50, 150));
 
             inputPanel.add(whiteLabel);
             inputPanel.add(whiteField);
@@ -156,6 +171,7 @@ public class ChessGUIManager extends JFrame {
             JButton startButton = new JButton("Start Game");
             startButton.setFont(new Font("Arial", Font.BOLD, 18));
             startButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            startButton.setMargin(new java.awt.Insets(12, 50, 12, 50)); // Much wider margins for modern look
             startButton.addActionListener(e -> {
                 String whiteName = whiteField.getText().trim();
                 String blackName = blackField.getText().trim();
@@ -188,48 +204,62 @@ public class ChessGUIManager extends JFrame {
 
             JPanel inputPanel = new JPanel(new GridLayout(5, 2, 10, 10));
 
-            JLabel nameLabel = new JLabel("Player Name:");
-            nameLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+            JLabel nameLabel = new JLabel("👤 Player Name:");
+            nameLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            nameLabel.setForeground(new Color(50, 50, 100));
+            
             JTextField nameField = new JTextField("Player");
-            nameField.setFont(new Font("Arial", Font.PLAIN, 16));
+            nameField.setFont(new Font("Arial", Font.BOLD, 16));
+            nameField.setBackground(new Color(255, 255, 240));
+            nameField.setForeground(new Color(30, 30, 80));
+            nameField.setBorder(new RoundedBorder(new Color(100, 150, 200), 2, 15));
+            nameField.setCaretColor(new Color(50, 50, 150));
 
             inputPanel.add(nameLabel);
             inputPanel.add(nameField);
 
             // Add color selection - using separate rows for better visibility
             JLabel colorLabel = new JLabel("Play as:");
-            colorLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+            colorLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            colorLabel.setForeground(new Color(50, 50, 100));
             
-            JButton whiteBtn = new JButton("⬜ White (goes first)");
-            JButton blackBtn = new JButton("⬛ Black (goes second)");
-            whiteBtn.setFont(new Font("Arial", Font.BOLD, 14));
-            blackBtn.setFont(new Font("Arial", Font.BOLD, 14));
+            RoundedButton whiteBtn = new RoundedButton("⬜ White (goes first)", 20);
+            RoundedButton blackBtn = new RoundedButton("⬛ Black (goes second)", 20);
+            whiteBtn.setFont(new Font("Arial", Font.BOLD, 15));
+            blackBtn.setFont(new Font("Arial", Font.BOLD, 15));
+            whiteBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            blackBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
             
             // Track selected color (default to White)
             final ChessColor[] selectedColor = {ChessColor.WHITE};
             
-            // Set initial colors - selected is green, unselected is light gray
-            whiteBtn.setBackground(new Color(100, 200, 100)); // Bright green for selected
-            whiteBtn.setForeground(Color.BLACK); // Black text for readability
-            blackBtn.setBackground(new Color(220, 220, 220)); // Light gray for unselected
-            blackBtn.setForeground(Color.BLACK); // Black text
+            // Set initial colors - selected has vibrant gradient-like effect, unselected is subtle
+            whiteBtn.setBackground(new Color(100, 200, 100)); // Vibrant green for selected
+            whiteBtn.setForeground(Color.WHITE); // White text for contrast
+            whiteBtn.setBorder(new RoundedBorder(
+                new Color(50, 150, 50), 3, 20, new java.awt.Insets(8, 15, 8, 15)
+            ));
             
-            // Critical settings for macOS/cross-platform color rendering
-            whiteBtn.setOpaque(true);
-            blackBtn.setOpaque(true);
-            whiteBtn.setContentAreaFilled(true);
-            blackBtn.setContentAreaFilled(true);
-            whiteBtn.setBorderPainted(true);
-            blackBtn.setBorderPainted(true);
+            blackBtn.setBackground(new Color(200, 210, 220)); // Light blue-gray for unselected - more distinct
+            blackBtn.setForeground(new Color(60, 60, 80)); // Dark blue-gray text
+            blackBtn.setBorder(new RoundedBorder(
+                new Color(150, 160, 180), 2, 20, new java.awt.Insets(8, 15, 8, 15)
+            ));
             
             whiteBtn.addActionListener(e -> {
                 selectedColor[0] = ChessColor.WHITE;
-                // Selected: bright green background with black text
+                // Selected: vibrant green with white text and thick border
                 whiteBtn.setBackground(new Color(100, 200, 100));
-                whiteBtn.setForeground(Color.BLACK);
-                // Unselected: light gray background with black text
-                blackBtn.setBackground(new Color(220, 220, 220));
-                blackBtn.setForeground(Color.BLACK);
+                whiteBtn.setForeground(Color.WHITE);
+                whiteBtn.setBorder(new RoundedBorder(
+                    new Color(50, 150, 50), 3, 20, new java.awt.Insets(8, 15, 8, 15)
+                ));
+                // Unselected: light blue-gray with dark text and thin border
+                blackBtn.setBackground(new Color(200, 210, 220));
+                blackBtn.setForeground(new Color(60, 60, 80));
+                blackBtn.setBorder(new RoundedBorder(
+                    new Color(150, 160, 180), 2, 20, new java.awt.Insets(8, 15, 8, 15)
+                ));
                 // Force UI refresh
                 whiteBtn.repaint();
                 blackBtn.repaint();
@@ -237,12 +267,18 @@ public class ChessGUIManager extends JFrame {
             
             blackBtn.addActionListener(e -> {
                 selectedColor[0] = ChessColor.BLACK;
-                // Selected: bright green background with black text
+                // Selected: vibrant green with white text and thick border
                 blackBtn.setBackground(new Color(100, 200, 100));
-                blackBtn.setForeground(Color.BLACK);
-                // Unselected: light gray background with black text
-                whiteBtn.setBackground(new Color(220, 220, 220));
-                whiteBtn.setForeground(Color.BLACK);
+                blackBtn.setForeground(Color.WHITE);
+                blackBtn.setBorder(new RoundedBorder(
+                    new Color(50, 150, 50), 3, 20, new java.awt.Insets(8, 15, 8, 15)
+                ));
+                // Unselected: light blue-gray with dark text and thin border
+                whiteBtn.setBackground(new Color(200, 210, 220));
+                whiteBtn.setForeground(new Color(60, 60, 80));
+                whiteBtn.setBorder(new RoundedBorder(
+                    new Color(150, 160, 180), 2, 20, new java.awt.Insets(8, 15, 8, 15)
+                ));
                 // Force UI refresh
                 blackBtn.repaint();
                 whiteBtn.repaint();
@@ -257,6 +293,7 @@ public class ChessGUIManager extends JFrame {
             JButton startButton = new JButton("Start Game");
             startButton.setFont(new Font("Arial", Font.BOLD, 18));
             startButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            startButton.setMargin(new java.awt.Insets(12, 50, 12, 50)); // Much wider margins for modern look
             startButton.addActionListener(e -> {
                 String name = nameField.getText().trim();
                 if (name.isEmpty()) {
@@ -299,6 +336,7 @@ public class ChessGUIManager extends JFrame {
         
         // Create all components before modifying the window
         ChessBoardPanel newBoardPanel = new ChessBoardPanel(engine, this);
+        CapturedPiecesPanel newCapturedPiecesPanel = new CapturedPiecesPanel(engine);
         
         JLabel newStatusLabel = new JLabel("White to move");
         newStatusLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -327,17 +365,19 @@ public class ChessGUIManager extends JFrame {
         setLayout(new BorderLayout());
         
         add(newBoardPanel, BorderLayout.CENTER);
+        add(newCapturedPiecesPanel, BorderLayout.EAST);
         add(newStatusLabel, BorderLayout.SOUTH);
         add(topPanel, BorderLayout.NORTH);
         
         // Assign to instance variables
         boardPanel = newBoardPanel;
+        capturedPiecesPanel = newCapturedPiecesPanel;
         statusLabel = newStatusLabel;
         
         isOnGameBoard = true; // We're now on the game board screen
         
-        // Resize window for chess board
-        setSize(800, 800);
+        // Resize window for chess board with captured pieces panel
+        setSize(1000, 800); // Increased width to accommodate captured pieces panel
         setLocationRelativeTo(null); // Re-center after resize
         
         updateStatusLabel(); // set initial status
@@ -351,6 +391,7 @@ public class ChessGUIManager extends JFrame {
             javax.swing.SwingUtilities.invokeLater(() -> {
                 engine.makeComputerMoveIfNeeded();
                 boardPanel.refreshBoard();
+                refreshCapturedPieces();
                 updateStatusLabel();
             });
         }
@@ -368,10 +409,28 @@ public class ChessGUIManager extends JFrame {
          if (engine.getBoard().isCheckmate(current)) {
              statusLabel.setText("CHECKMATE! " + playerName + " has been checkmated!");
              statusLabel.setForeground(Color.RED);
-             JOptionPane.showMessageDialog(this, 
-                 playerName + " is in CHECKMATE!\nGame Over!", 
-                 "Checkmate!", 
-                 JOptionPane.WARNING_MESSAGE);
+             
+             // Determine who won - the player who is checkmated LOSES
+             boolean playerWon;
+             if (engine.getAILevel() == ChessGameEngine.AILevel.NONE) {
+                 // Two player mode - just show game over message
+                 JOptionPane.showMessageDialog(this, 
+                     playerName + " is in CHECKMATE!\nGame Over!", 
+                     "Checkmate!", 
+                     JOptionPane.WARNING_MESSAGE);
+                 engine.setGameEnded(true);
+                 return;
+             } else {
+                 // Playing against AI
+                 if (current == ChessColor.WHITE) {
+                     // White (human player) is checkmated - AI wins
+                     playerWon = false;
+                 } else {
+                     // Black (AI) is checkmated - human player wins
+                     playerWon = true;
+                 }
+                 handleGameEnd(playerWon);
+             }
              return;
          }
          
@@ -382,6 +441,7 @@ public class ChessGUIManager extends JFrame {
                  playerName + " is in STALEMATE!\nNo legal moves available. Game is a draw!", 
                  "Stalemate - Draw", 
                  JOptionPane.INFORMATION_MESSAGE);
+             engine.setGameEnded(true);
              return;
          }
          
@@ -393,6 +453,12 @@ public class ChessGUIManager extends JFrame {
              statusLabel.setText(text);
              statusLabel.setForeground(Color.BLACK);
          }
+	}
+	
+	public void refreshCapturedPieces() {
+		if (capturedPiecesPanel != null) {
+			capturedPiecesPanel.refreshCapturedPieces();
+		}
 	}
 	
 	public void showIllegalMoveMessage() {
@@ -668,14 +734,14 @@ public class ChessGUIManager extends JFrame {
 	        }
 	    });
 	    
-	    buttonPanel.add(backBtn);
-	    buttonPanel.add(clearBtn);
-	    leaderboardPanel.add(buttonPanel, BorderLayout.SOUTH);
-	    
-	    add(leaderboardPanel);
-	    revalidate();
-	    repaint();
-	}
+    buttonPanel.add(backBtn);
+    buttonPanel.add(clearBtn);
+    leaderboardPanel.add(buttonPanel, BorderLayout.SOUTH);
+    
+    add(leaderboardPanel);
+    revalidate();
+    repaint();
+}
 	
 	private void showScoringInfoDialog() {
 	    String message =

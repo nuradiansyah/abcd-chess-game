@@ -1,5 +1,8 @@
 package com.game.chess.logic;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ChessBoard {
 
 	public static final int SIZE = 8;
@@ -13,6 +16,10 @@ public class ChessBoard {
     private boolean whiteRookQueensideMoved = false;
     private boolean blackRookKingsideMoved = false;
     private boolean blackRookQueensideMoved = false;
+    
+    // Track captured pieces
+    private final List<ChessPiece> capturedWhitePieces = new ArrayList<>();
+    private final List<ChessPiece> capturedBlackPieces = new ArrayList<>();
 
     public ChessBoard() {
         setupInitialPosition();
@@ -61,6 +68,16 @@ public class ChessBoard {
         int fromCol = move.getFromCol();
         int toRow = move.getToRow();
         int toCol = move.getToCol();
+        
+        // Track captured pieces before overwriting
+        ChessPiece capturedPiece = board[toRow][toCol];
+        if (capturedPiece != null) {
+            if (capturedPiece.getColor() == ChessColor.WHITE) {
+                capturedWhitePieces.add(capturedPiece);
+            } else {
+                capturedBlackPieces.add(capturedPiece);
+            }
+        }
         
         // Track king and rook movements for castling
         if (piece != null) {
@@ -548,6 +565,20 @@ public class ChessBoard {
         }
         
         return false;
+    }
+    
+    /**
+     * Get the list of captured white pieces.
+     */
+    public List<ChessPiece> getCapturedWhitePieces() {
+        return new ArrayList<>(capturedWhitePieces);
+    }
+    
+    /**
+     * Get the list of captured black pieces.
+     */
+    public List<ChessPiece> getCapturedBlackPieces() {
+        return new ArrayList<>(capturedBlackPieces);
     }
 	
 	}

@@ -21,6 +21,7 @@ This project is a fully-featured Java-based Chess Game that I developed in my sp
 
 ### Leaderboard System
 - **Top 10 Rankings**: Compete for the highest scores against AI opponents
+- **📊 "How to Score" Button**: View the complete scoring breakdown from the main menu
 - **Score Calculation**: Sophisticated scoring based on:
   - **Base Score**: 1000 points for winning
   - **Difficulty Multiplier**: 1.5x (Beginner), 2.5x (Intermediate), 4.0x (Advanced)
@@ -123,7 +124,7 @@ Beat Intermediate AI in 30 moves:
 - `LeaderboardManager`: Persistent leaderboard storage and ranking
 
 ### Requirements
-- Java 8 or higher
+- Java 17 or higher
 - Swing GUI library (included in standard JDK)
 - No external dependencies required
 
@@ -150,10 +151,16 @@ chess_game_project/
 │   ├── CASTLING.md                    (Castling feature guide)
 │   └── LEADERBOARD.md                 (Scoring system details)
 ├── chess_leaderboard.dat              (Leaderboard data file)
+├── chess_2026-03-04.jar               (Runnable JAR)
 └── README.md                          (This file)
 ```
 
 ## 🚀 Running the Game
+
+### From JAR
+```bash
+java -jar chess_2026-03-04.jar
+```
 
 ### From Eclipse IDE
 1. Open the project in Eclipse

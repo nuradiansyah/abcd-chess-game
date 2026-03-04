@@ -110,6 +110,7 @@ public class ChessBoardPanel extends JPanel implements ActionListener {
             selectedCol = -1;
             if (ok) {
                 refreshBoard();
+                guiManager.refreshCapturedPieces(); // Update captured pieces display
                 guiManager.updateStatusLabel(); // after player move
                 
                 // Check if opponent's king was captured (player won)
@@ -121,6 +122,7 @@ public class ChessBoardPanel extends JPanel implements ActionListener {
                 
                 engine.makeComputerMoveIfNeeded();
                 refreshBoard();
+                guiManager.refreshCapturedPieces(); // Update captured pieces display after AI move
                 guiManager.updateStatusLabel(); // after computer move, if any
                 
                 // Check if player's king was captured (player lost)
